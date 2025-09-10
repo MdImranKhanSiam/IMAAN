@@ -120,7 +120,21 @@ class _PrayerTimeScreenState extends State<PrayerTimeScreen> {
     return Scaffold(
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Color.fromARGB(255, 66, 80, 151),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading prayer times...',
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              )
               : prayerTimes == null
               ? const Center(child: Text('Failed to load prayer times'))
               : Column(
