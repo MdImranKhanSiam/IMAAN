@@ -29,12 +29,14 @@ class _PrayerTimeState extends State<PrayerTime> {
       body: Column(
         children: [
           Expanded(
-            flex: 5,
+
+            flex: 7,
+            
             child: PrayerTimeScreen(onLocationDataFetched: updateLocationData), // Pass the callback to PrayerTimeScreen
           ),
           // Divider is optional, can be added if needed
           Expanded(
-            flex: 1,
+            flex: 2,
             child: PrayerTimesRow(
               city: currentCity,
               country: currentCountry,

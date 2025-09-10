@@ -18,7 +18,7 @@ class PrayerTimeList extends StatelessWidget {
   String convertTo12Hour(String time24) {
     final parts = time24.split(":");
     final hour = int.parse(parts[0]);
-    final minute = parts[1];
+    final minute = parts[1]; 
     final suffix = hour >= 12 ? "PM" : "AM";
     final hour12 = hour % 12 == 0 ? 12 : hour % 12;
     return "$hour12:$minute $suffix";
@@ -69,7 +69,7 @@ class PrayerTimeList extends StatelessWidget {
             child: const Text(
               'Prayer Times',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: Colors.black87,
                 letterSpacing: 1.1,
@@ -90,7 +90,7 @@ class PrayerTimeList extends StatelessWidget {
               final icon = prayerIcons[name] ?? Icons.access_time;
 
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: LinearGradient(
