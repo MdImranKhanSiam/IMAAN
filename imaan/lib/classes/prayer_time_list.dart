@@ -26,7 +26,12 @@ class PrayerTimeList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = prayerEntries.toList();
+    // Filter entries to only include the five prayers
+    final fivePrayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final filteredEntries =
+        prayerEntries
+            .where((entry) => fivePrayers.contains(entry.key))
+            .toList();
 
     return Column(
       children: [
@@ -77,9 +82,9 @@ class PrayerTimeList extends StatelessWidget {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: entries.length,
+            itemCount: filteredEntries.length,
             itemBuilder: (context, index) {
-              final entry = entries[index];
+              final entry = filteredEntries[index];
               final name = entry.key;
               final time = entry.value;
               final icon = prayerIcons[name] ?? Icons.access_time;

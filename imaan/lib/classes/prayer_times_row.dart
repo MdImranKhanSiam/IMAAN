@@ -4,6 +4,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
 class PrayerTimesRow extends StatefulWidget {
+  final String? city;
+  final String? country;
+  final String? methodName;
+
+  const PrayerTimesRow({super.key, this.city, this.country, this.methodName});
+
   @override
   _PrayerTimesRowState createState() => _PrayerTimesRowState();
 }
@@ -67,83 +73,102 @@ class _PrayerTimesRowState extends State<PrayerTimesRow> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(prayers.length, (index) {
-          final prayer = prayers[index];
-          final isSelected = selectedIndices.contains(index);
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.city != null &&
+              widget.country != null &&
+              widget.methodName != null) ...[
+            Text(
+              'Location: ${widget.city}, ${widget.country}',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 5),
+            Text(
+              'Calculation Method: ${widget.methodName}',
+              style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+            ),
+            SizedBox(height: 15),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(prayers.length, (index) {
+              final prayer = prayers[index];
+              final isSelected = selectedIndices.contains(index);
 
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3.5),
-              child: GestureDetector(
-                onTap: () => _markPrayer(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient:
-                        isSelected
-                            ? LinearGradient(
-                              colors: [
-                                Colors.green.shade300,
-                                Colors.green.shade500,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                            : LinearGradient(
-                              colors: [
-                                Colors.blue.shade100,
-                                Colors.indigo.shade100,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 6,
-                        offset: Offset(2, 3),
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3.5),
+                  child: GestureDetector(
+                    onTap: () => _markPrayer(index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 4,
                       ),
-                    ],
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSelected ? Icons.check_circle : prayer['icon'],
-                          color: isSelected ? Colors.white : Colors.indigo,
-                          size: 22, // ⬅ Smaller icon
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          prayer['name'],
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                          style: TextStyle(
-                            fontSize: 13, // ⬅ Slightly smaller text
-                            fontWeight: FontWeight.w600,
-                            color:
-                                isSelected
-                                    ? Colors.white
-                                    : Colors.indigo.shade700,
+                      decoration: BoxDecoration(
+                        gradient:
+                            isSelected
+                                ? LinearGradient(
+                                  colors: [
+                                    Colors.green.shade300,
+                                    Colors.green.shade500,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                                : LinearGradient(
+                                  colors: [
+                                    Colors.blue.shade100,
+                                    Colors.indigo.shade100,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(2, 3),
                           ),
+                        ],
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSelected ? Icons.check_circle : prayer['icon'],
+                              color: isSelected ? Colors.white : Colors.indigo,
+                              size: 22,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              prayer['name'],
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    isSelected
+                                        ? Colors.white
+                                        : Colors.indigo.shade700,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }

@@ -10,6 +10,19 @@ class PrayerTime extends StatefulWidget {
 }
 
 class _PrayerTimeState extends State<PrayerTime> {
+  String? currentCity;
+  String? currentCountry;
+  String? calculationMethod;
+
+  // This method will be called when PrayerTimeScreen fetches data.
+  void updateLocationData(String city, String country, String method) {
+    setState(() {
+      currentCity = city;
+      currentCountry = country;
+      calculationMethod = method;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,13 +30,16 @@ class _PrayerTimeState extends State<PrayerTime> {
         children: [
           Expanded(
             flex: 5,
-            child: PrayerTimeScreen(), // Display PrayerTimeScreen
+            child: PrayerTimeScreen(onLocationDataFetched: updateLocationData), // Pass the callback to PrayerTimeScreen
           ),
           // Divider is optional, can be added if needed
-          // Divider(height: 1),
           Expanded(
             flex: 1,
-            child: PrayerTimesRow(), // Integrate PrayerRowLocked here instead of PrayerTimesRow.
+            child: PrayerTimesRow(
+              city: currentCity,
+              country: currentCountry,
+              methodName: calculationMethod,
+            ),
           ),
         ],
       ),
