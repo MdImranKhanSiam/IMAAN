@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:imaan/all_pages/pages/prayer_times_folder/prayer_time_screen.dart';
-import 'package:imaan/classes/prayer_times_row.dart';
+import 'package:imaan/classes/prayer_times_row.dart'; // Import PrayerRowLocked class.
 
 class PrayerTime extends StatefulWidget {
   const PrayerTime({super.key});
@@ -15,9 +15,16 @@ class _PrayerTimeState extends State<PrayerTime> {
     return Scaffold(
       body: Column(
         children: [
-          Expanded(flex: 2, child: PrayerTimeScreen()),
-          //Divider(height: 1),
-          Expanded(child: PrayerTimesRow()),
+          Expanded(
+            flex: 5,
+            child: PrayerTimeScreen(), // Display PrayerTimeScreen
+          ),
+          // Divider is optional, can be added if needed
+          // Divider(height: 1),
+          Expanded(
+            flex: 1,
+            child: PrayerTimesRow(), // Integrate PrayerRowLocked here instead of PrayerTimesRow.
+          ),
         ],
       ),
     );

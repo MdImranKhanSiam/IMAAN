@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:imaan/all_pages/pages/prayer_times_folder/prayer_time_service.dart';
+import 'package:imaan/classes/prayer_time_list.dart';
 import 'package:intl/intl.dart';
 
 class PrayerTimeScreen extends StatefulWidget {
@@ -51,57 +52,29 @@ class _PrayerTimeScreenState extends State<PrayerTimeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       //backgroundColor: const Color.fromARGB(255, 251, 248, 248), //Background Color
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(
-          255,
-          251,
-          248,
-          248,
-        ), //Appbar Color
-        title: Text(
-          'Prayer Times',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: const Color.fromARGB(255, 0, 0, 0),
-            fontSize: 30,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: const Color.fromARGB(
+      //     255,
+      //     251,
+      //     248,
+      //     248,
+      //   ), //Appbar Color
+      //   title: Text(
+      //     'Prayer Times',
+      //     style: TextStyle(
+      //       fontWeight: FontWeight.w900,
+      //       color: const Color.fromARGB(255, 0, 0, 0),
+      //       fontSize: 30,
+      //     ),
+      //   ),
+      //   centerTitle: true,
+      // ),
       body:
           isLoading
               ? Center(child: CircularProgressIndicator())
               : prayerTimes == null
               ? Center(child: Text('Failed to load prayer times'))
-              : ListView(
-                children:
-                    prayerTimes!.entries.map((entry) {
-                      return Card(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            entry.key,
-                            style: TextStyle(
-                              color: const Color.fromARGB(255, 0, 0, 0),
-                              fontSize: 25,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          trailing: Text(
-                            convertTo12Hour(entry.value),
-                            style: TextStyle(
-                              color: const Color.fromARGB(255, 12, 185, 104),
-                              fontSize: 25,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-              ),
+              : PrayerTimeList(prayerEntries: prayerTimes!.entries),
     );
   }
 }

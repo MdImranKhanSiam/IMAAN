@@ -161,6 +161,7 @@ class _HijriCalendarState extends State<HijriCalendar> {
 
                     //Hijri Date
                     Container(
+                      
                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
