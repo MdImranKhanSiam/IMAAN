@@ -18,7 +18,10 @@ class WidgetTree extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("IMAAN"), centerTitle: true),
+      appBar: AppBar(
+        // title: Text("IMAAN"), 
+        centerTitle: true
+      ),
       
       body: ValueListenableBuilder(valueListenable: SelectPage, builder: (context, SelectedPage, child) {
         return pages.elementAt(SelectedPage);
