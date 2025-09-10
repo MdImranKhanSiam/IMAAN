@@ -26,7 +26,8 @@ class _QiblaScreenState extends State<QiblaScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 48, 48, 48),
+        // backgroundColor: const Color.fromARGB(255, 48, 48, 48),
+        //backgroundColor: const Color.fromARGB(255, 240, 233, 233),
         body: StreamBuilder(
           stream: FlutterQiblah.qiblahStream,
           builder: (context, snapshot) {
@@ -34,7 +35,7 @@ class _QiblaScreenState extends State<QiblaScreen> with SingleTickerProviderStat
               return Container(
                 alignment: Alignment.center,
                 child: const CircularProgressIndicator(
-                  color: Colors.white,
+                  color: Color.fromARGB(255, 66, 80, 151),
                 ),
               );
             }

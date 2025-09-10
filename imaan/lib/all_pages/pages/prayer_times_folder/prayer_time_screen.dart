@@ -50,16 +50,20 @@ class _PrayerTimeScreenState extends State<PrayerTimeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 251, 248, 248), //Background Color
+      //backgroundColor: const Color.fromARGB(255, 251, 248, 248), //Background Color
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 251, 248, 248), //Appbar Color
+        backgroundColor: const Color.fromARGB(
+          255,
+          251,
+          248,
+          248,
+        ), //Appbar Color
         title: Text(
           'Prayer Times',
           style: TextStyle(
             fontWeight: FontWeight.w900,
             color: const Color.fromARGB(255, 0, 0, 0),
             fontSize: 30,
-            
           ),
         ),
         centerTitle: true,
