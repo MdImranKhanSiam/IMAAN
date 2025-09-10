@@ -48,13 +48,13 @@ class _QiblaScreenState extends State<QiblaScreen> with SingleTickerProviderStat
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    "${qiblahDirection.direction.toInt()}°", 
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                    ),
-                  ),
+                  // Text(
+                  //   "${qiblahDirection.direction.toInt()}°",       //Shows Degree Of Rotation
+                  //   style: const TextStyle(
+                  //     color: Colors.white,
+                  //     fontSize: 24,
+                  //   ),
+                  // ),
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 300,
