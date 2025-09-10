@@ -35,3 +35,6 @@
 - Muslims aiming to maintain regular Salah  
 - New Muslims and youth looking for structured guidance  
 - Travelers or Muslims in non-Muslim countries needing accurate timings  
+
+
+![App Screenshot](https://github.com/MdImranKhanSiam/Project_Photos/blob/845df35da67d96b53d502e40fbb293fa52be31fa/IMAAN/Screenshot%202025-09-10%20192615.png?raw=true)
