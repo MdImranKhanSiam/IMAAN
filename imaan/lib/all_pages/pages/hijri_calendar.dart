@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:islamic_hijri_calendar/islamic_hijri_calendar.dart';
+import 'package:imaan/classes/app_log.dart';
 
 class HijriCalendar extends StatefulWidget {
   const HijriCalendar({super.key});
@@ -85,6 +86,7 @@ class _HijriCalendarState extends State<HijriCalendar> {
 
               getSelectedEnglishDate: (selectedDate) {
                 English_Date = formatGregorianDate('${selectedDate}');
+                AppLog.i('Calendar', 'Selected date: $English_Date');
                 setState(() {
                   Clicked = true;
                 });
@@ -94,6 +96,7 @@ class _HijriCalendarState extends State<HijriCalendar> {
                 String The_date = '${selectedDate}';
                 String converted_date = convertArabicDateToEnglish(The_date);
                 Hijri_Date = formatHijriDate(converted_date);
+                AppLog.i('Calendar', 'Hijri date: $Hijri_Date');
               },
             ),
 

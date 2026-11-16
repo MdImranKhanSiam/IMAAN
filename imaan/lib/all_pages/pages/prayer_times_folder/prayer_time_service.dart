@@ -1,75 +1,172 @@
-import 'package:http/http.dart' as http;
-import 'package:imaan/classes/country_method_map.dart';
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'package:imaan/classes/app_log.dart';
+import 'package:imaan/classes/country_method_map.dart';
+import 'package:imaan/classes/location_helper.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class PrayerTimeService {
-  // Time threshold for cache expiration (e.g., 24 hours)
-  static const cacheDuration = Duration(hours: 24);
+/// Everything the prayer time page shows.
+class PrayerData {
+  final Map<String, String> timings;
+  final String city;
+  final String country;
+  final int method;
+  final String date; // yyyy-MM-dd the timings belong to
+  final double latitude;
+  final double longitude;
 
-  Future<Map<String, String>> getPrayerTimesFromLocation(
-      double latitude, double longitude, String countryName) async {
+  const PrayerData({
+    required this.timings,
+    required this.city,
+    required this.country,
+    required this.method,
+    required this.date,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  LatLng get position => (latitude: latitude, longitude: longitude);
+
+  Map<String, dynamic> toJson() => {
+    'timings': timings,
+    'city': city,
+    'country': country,
+    'method': method,
+    'date': date,
+    'latitude': latitude,
+    'longitude': longitude,
+  };
+
+  static PrayerData? fromJson(String? source) {
+    if (source == null) return null;
     try {
-      // First, check if we have cached prayer times and if they're valid
-      final cachedPrayerTimes = await _getCachedPrayerTimes();
-      if (cachedPrayerTimes != null) {
-        return cachedPrayerTimes;
-      }
-
-      // If no valid cache or expired, fetch from the API
-      final method = countryMethodMap[countryName] ?? 2; // Default method
-
-      final url = Uri.parse(
-        'https://api.aladhan.com/v1/timings?latitude=$latitude&longitude=$longitude&method=$method&madhab=1',
+      final j = json.decode(source) as Map<String, dynamic>;
+      return PrayerData(
+        timings: Map<String, String>.from(j['timings'] as Map),
+        city: j['city'] as String,
+        country: j['country'] as String,
+        method: j['method'] as int,
+        date: j['date'] as String,
+        latitude: (j['latitude'] as num).toDouble(),
+        longitude: (j['longitude'] as num).toDouble(),
       );
+    } catch (_) {
+      return null;
+    }
+  }
+}
 
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final timings = Map<String, String>.from(data['data']['timings']);
-        
-        // Cache the prayer times with the current timestamp
-        await _cachePrayerTimes(timings);
-        
-        return timings;
-      } else {
-        throw Exception('Failed to load prayer times');
+class PrayerTimeService {
+  static const _tag = 'PrayerService';
+  static const _cacheKey = 'prayerDataV2';
+
+  /// Distance the user can move before we ask the API again.
+  static const _reuseKm = 2.0;
+
+  static String get today => DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  /// Last saved data, returned instantly (may be from another day).
+  Future<PrayerData?> loadCached() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = PrayerData.fromJson(prefs.getString(_cacheKey));
+    AppLog.i(
+      _tag,
+      data == null ? 'No cached prayer times' : 'Cached prayer times from ${data.date}',
+    );
+    return data;
+  }
+
+  /// Returns prayer times for [pos], using the cache when it still fits.
+  Future<PrayerData> fetch(LatLng pos) async {
+    final cached = await loadCached();
+    final nearCached =
+        cached != null && LocationHelper.distanceKm(cached.position, pos) < _reuseKm;
+
+    if (nearCached && cached.date == today) {
+      AppLog.i(_tag, 'Cache is for today and this location, no download needed');
+      return cached;
+    }
+
+    // City / country: reuse cached names when we are in the same place.
+    String city = 'Unknown';
+    String country = 'Unknown';
+    if (nearCached && cached.country != 'Unknown') {
+      city = cached.city;
+      country = cached.country;
+      AppLog.i(_tag, 'Reusing cached place name: $city, $country');
+    } else {
+      try {
+        final placemarks = await AppLog.timed(
+          _tag,
+          'Geocoding',
+          () => Geocoding()
+              .placemarkFromCoordinates(pos.latitude, pos.longitude)
+              .timeout(const Duration(seconds: 8)),
+        );
+        if (placemarks.isNotEmpty) {
+          final p = placemarks.first;
+          if (p.country?.isNotEmpty ?? false) country = p.country!;
+          if (p.locality?.isNotEmpty ?? false) {
+            city = p.locality!;
+          } else if (p.subAdministrativeArea?.isNotEmpty ?? false) {
+            city = p.subAdministrativeArea!;
+          }
+        }
+        AppLog.i(_tag, 'Place: $city, $country');
+      } catch (_) {
+        // Already logged by AppLog.timed; names are optional.
       }
+    }
+
+    final method = countryMethodMap[country] ?? 2;
+    final url = Uri.parse(
+      'https://api.aladhan.com/v1/timings'
+      '?latitude=${pos.latitude}&longitude=${pos.longitude}&method=$method&madhab=1',
+    );
+
+    try {
+      final response = await AppLog.timed(
+        _tag,
+        'Download prayer times (method $method)',
+        () => http.get(url).timeout(const Duration(seconds: 15)),
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+      final body = json.decode(response.body);
+      final timings = <String, String>{};
+      (body['data']['timings'] as Map).forEach((key, value) {
+        // Some responses include a timezone suffix like "05:12 (+06)".
+        timings[key.toString()] = value.toString().split(' ').first;
+      });
+
+      final data = PrayerData(
+        timings: timings,
+        city: city,
+        country: country,
+        method: method,
+        date: today,
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cacheKey, json.encode(data.toJson()));
+      AppLog.i(_tag, 'Saved prayer times to cache');
+      return data;
     } catch (e) {
-      throw Exception('Error fetching prayer times: $e');
-    }
-  }
-
-  // Caching the prayer times along with the timestamp
-  Future<void> _cachePrayerTimes(Map<String, String> prayerTimes) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = json.encode(prayerTimes);
-    final timestamp = DateTime.now().toIso8601String();
-    
-    await prefs.setString('cachedPrayerTimes', jsonString);
-    await prefs.setString('cachedPrayerTimesTimestamp', timestamp);
-  }
-
-  // Retrieving the cached prayer times and checking for expiration
-  Future<Map<String, String>?> _getCachedPrayerTimes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('cachedPrayerTimes');
-    final timestampString = prefs.getString('cachedPrayerTimesTimestamp');
-    
-    if (jsonString != null && timestampString != null) {
-      final timestamp = DateTime.parse(timestampString);
-      
-      // If the cache is older than the specified duration, refresh it
-      if (DateTime.now().difference(timestamp) < cacheDuration) {
-        final Map<String, dynamic> jsonData = json.decode(jsonString);
-        return Map<String, String>.from(jsonData);
-      } else {
-        // Cache expired, return null so it will be refreshed
-        return null;
+      AppLog.e(_tag, 'Download failed', e);
+      // No internet / server problem: fall back to the last saved times.
+      if (cached != null) {
+        AppLog.w(_tag, 'Showing cached times from ${cached.date} instead');
+        return cached;
       }
+      throw Exception(
+        'Could not download prayer times. Check your internet connection.',
+      );
     }
-    
-    // No cache found, return null
-    return null;
   }
 }

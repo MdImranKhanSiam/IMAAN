@@ -5,35 +5,46 @@ import 'package:imaan/all_pages/pages/qibla.dart';
 import 'package:imaan/data/notifiers.dart';
 import 'widget/navbar_widget.dart';
 
-List<Widget> pages = [PrayerTime(), Qibla(), HijriCalendar()];
-
-class WidgetTree extends StatelessWidget {
+class WidgetTree extends StatefulWidget {
   final VoidCallback onToggleTheme;
 
-  const WidgetTree({Key? key, required this.onToggleTheme}) : super(key: key);
+  const WidgetTree({super.key, required this.onToggleTheme});
+
+  @override
+  State<WidgetTree> createState() => _WidgetTreeState();
+}
+
+class _WidgetTreeState extends State<WidgetTree> {
+  /// Tabs the user has opened at least once. They stay alive afterwards,
+  /// so switching back is instant and nothing reloads.
+  final Set<int> _visited = {};
+
+  Widget _page(int index, int selected) {
+    if (!_visited.contains(index)) return const SizedBox.shrink();
+    switch (index) {
+      case 0:
+        return const PrayerTime();
+      case 1:
+        return Qibla(active: selected == 1);
+      default:
+        return const HijriCalendar();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   centerTitle: true,
-      //   actions: [
-      //     IconButton(
-            
-      //       icon: const Icon(Icons.brightness_6, size: 0,),
-            
-      //       tooltip: 'Toggle Theme',
-      //       onPressed: onToggleTheme,
-      //     ),
-      //   ],
-      // ),
-      body: ValueListenableBuilder(
+      body: ValueListenableBuilder<int>(
         valueListenable: SelectPage,
         builder: (context, selectedPage, child) {
-          return pages.elementAt(selectedPage);
+          _visited.add(selectedPage);
+          return IndexedStack(
+            index: selectedPage,
+            children: List.generate(3, (i) => _page(i, selectedPage)),
+          );
         },
       ),
-      bottomNavigationBar: NavbarWidget(),
+      bottomNavigationBar: const NavbarWidget(),
     );
   }
 }

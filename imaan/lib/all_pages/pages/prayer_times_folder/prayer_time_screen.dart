@@ -1,30 +1,30 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:imaan/all_pages/pages/prayer_times_folder/prayer_time_service.dart';
-import 'package:imaan/classes/country_method_map.dart';
+import 'package:imaan/classes/app_log.dart';
+import 'package:imaan/classes/location_helper.dart';
 import 'package:imaan/classes/prayer_time_list.dart';
-import 'package:intl/intl.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart'; // Import geocoding package
 
 class PrayerTimeScreen extends StatefulWidget {
-  final Function(String, String, String) onLocationDataFetched;
+  final void Function(String, String, String) onLocationDataFetched;
 
-  const PrayerTimeScreen({
-    super.key,
-    required this.onLocationDataFetched,
-  }); // Accept callback
+  const PrayerTimeScreen({super.key, required this.onLocationDataFetched});
 
   @override
-  _PrayerTimeScreenState createState() => _PrayerTimeScreenState();
+  State<PrayerTimeScreen> createState() => _PrayerTimeScreenState();
 }
 
-class _PrayerTimeScreenState extends State<PrayerTimeScreen> {
-  Map<String, String>? prayerTimes;
-  bool isLoading = true;
-  String? currentCity;
-  String? currentCountry;
-  int? calculationMethod;
+class _PrayerTimeScreenState extends State<PrayerTimeScreen>
+    with WidgetsBindingObserver {
+  static const _tag = 'Prayer';
+
+  final _service = PrayerTimeService();
+  PrayerData? _data;
+  bool _loading = true;
+  bool _refreshing = false;
+  String? _errorMessage;
+  LocationException? _locationError;
 
   static const Map<int, String> methodNames = {
     0: 'Shia Ithna-Ashari',
@@ -46,104 +46,165 @@ class _PrayerTimeScreenState extends State<PrayerTimeScreen> {
   @override
   void initState() {
     super.initState();
-    fetchPrayerTimes();
+    AppLog.i(_tag, 'Screen opened');
+    WidgetsBinding.instance.addObserver(this);
+    LocationHelper.position.addListener(_onPositionChanged);
+    _start();
   }
 
-  void fetchPrayerTimes() async {
-    try {
-      LocationPermission permission = await Geolocator.requestPermission();
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    LocationHelper.position.removeListener(_onPositionChanged);
+    super.dispose();
+  }
 
-      if (permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse) {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-        final placemark = placemarks.first;
-        final countryName = placemark.country ?? 'Unknown';
-        final cityName =
-            placemark.locality ?? placemark.subAdministrativeArea ?? 'Unknown';
-
-        final method = countryMethodMap[countryName] ?? 2;
-
-        final service = PrayerTimeService();
-        final times = await service.getPrayerTimesFromLocation(
-          position.latitude,
-          position.longitude,
-          countryName,
-        );
-
-        setState(() {
-          prayerTimes = times;
-          isLoading = false;
-          currentCity = cityName;
-          currentCountry = countryName;
-          calculationMethod = method;
-
-          // Pass the location data back to the parent widget
-          widget.onLocationDataFetched(
-            cityName,
-            countryName,
-            methodNames[method]!,
-          );
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        if (kDebugMode) {
-          print('Location permission denied');
-        }
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      if (kDebugMode) {
-        print('Error fetching prayer times: $e');
-      }
+  /// When the app comes back from the background, make sure the times are
+  /// still for today.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      AppLog.i(_tag, 'App resumed, checking prayer times are current');
+      _refresh();
     }
   }
 
-  String convertTo12Hour(String time24) {
-    final dateTime = DateFormat("HH:mm").parse(time24);
-    final formattedTime = DateFormat("h:mm a").format(dateTime);
-    return formattedTime;
+  void _onPositionChanged() {
+    final pos = LocationHelper.position.value;
+    if (pos != null &&
+        _data != null &&
+        LocationHelper.distanceKm(pos, _data!.position) > 2) {
+      AppLog.i(_tag, 'Location changed, reloading prayer times');
+      _refresh();
+    }
+  }
+
+  Future<void> _start() async {
+    // 1. Show the last saved times instantly so the screen is never empty.
+    final cached = await _service.loadCached();
+    if (cached != null && mounted) {
+      _show(cached);
+      AppLog.i(_tag, 'Showing cached times while refreshing');
+    }
+    // 2. Then make sure they are correct for today and this location.
+    await _refresh();
+  }
+
+  Future<void> _refresh() async {
+    if (_refreshing) return;
+    _refreshing = true;
+    if (_data == null) {
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+        _locationError = null;
+      });
+    }
+
+    try {
+      final pos = await LocationHelper.getPosition();
+      final data = await _service.fetch(pos);
+      if (mounted) _show(data);
+    } on LocationException catch (e) {
+      AppLog.w(_tag, 'Location problem: ${e.message}');
+      if (mounted && _data == null) {
+        setState(() {
+          _loading = false;
+          _errorMessage = e.message;
+          _locationError = e;
+        });
+      }
+    } catch (e) {
+      AppLog.e(_tag, 'Could not load prayer times', e);
+      if (mounted && _data == null) {
+        setState(() {
+          _loading = false;
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      _refreshing = false;
+    }
+  }
+
+  void _show(PrayerData data) {
+    final isNew = _data == null ||
+        _data!.date != data.date ||
+        _data!.city != data.city ||
+        _data!.timings.toString() != data.timings.toString();
+    if (!isNew) return;
+
+    setState(() {
+      _data = data;
+      _loading = false;
+      _errorMessage = null;
+    });
+    AppLog.i(
+      _tag,
+      'Showing times for ${data.city}, ${data.country} (${data.date}): '
+      '${['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((p) => '$p ${data.timings[p]}').join(', ')}',
+    );
+    widget.onLocationDataFetched(
+      data.city,
+      data.country,
+      methodNames[data.method] ?? 'Muslim World League',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body:
-          isLoading
-              ? const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Color.fromARGB(255, 66, 80, 151),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Loading prayer times...',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  ],
-                ),
-              )
-              : prayerTimes == null
-              ? const Center(child: Text('Failed to load prayer times'))
-              : Column(
-                children: [
-                  Expanded(
-                    child: PrayerTimeList(prayerEntries: prayerTimes!.entries),
-                  ),
-                ],
+    if (_loading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color.fromARGB(255, 66, 80, 151)),
+            SizedBox(height: 16),
+            Text(
+              'Loading prayer times...',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_data == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_off, size: 48, color: Colors.black45),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage ?? 'Failed to load prayer times',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
-    );
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  AppLog.i(_tag, 'Tapped "Try again"');
+                  _refresh();
+                },
+                child: const Text('Try again'),
+              ),
+              if (_locationError?.hasFix ?? false)
+                TextButton(
+                  onPressed: () {
+                    AppLog.i(_tag, 'Tapped "Open settings"');
+                    _locationError!.openFixSettings();
+                  },
+                  child: const Text('Open settings'),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return PrayerTimeList(prayerEntries: _data!.timings.entries);
   }
 }

@@ -1,0 +1,14 @@
+{
+  // Press F5 (or Run > Start Debugging) and pick "IMAAN (debug)".
+  // App logs ([IMAAN][...] lines) appear in the DEBUG CONSOLE tab, not TERMINAL.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "IMAAN (debug)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "flutterMode": "debug"
+    }
+  ]
+}

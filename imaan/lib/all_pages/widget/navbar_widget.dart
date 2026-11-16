@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:imaan/classes/app_log.dart';
 import 'package:imaan/data/notifiers.dart';
 
 class NavbarWidget extends StatelessWidget {
@@ -25,6 +26,8 @@ class NavbarWidget extends StatelessWidget {
           ],
 
           onDestinationSelected: (int value) {
+            const names = ['Prayer Time', 'Qibla', 'Hijri Calendar'];
+            AppLog.i('Nav', 'Tapped tab: ${names[value]}');
             SelectPage.value = value;
           },
           selectedIndex: TheSelectedPage,

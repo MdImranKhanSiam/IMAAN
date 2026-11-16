@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_lite/lucide_icons_lite.dart';
 import 'package:intl/intl.dart';
+import 'package:imaan/classes/app_log.dart';
 
 class PrayerTimesRow extends StatefulWidget {
   final String? city;
@@ -50,13 +51,18 @@ class _PrayerTimesRowState extends State<PrayerTimesRow> {
       selectedIndices.clear();
     }
 
-    setState(() {});
+    AppLog.i('Tracker', 'Prayed today: ${selectedIndices.map((i) => prayers[i]['name']).join(', ')}');
+    if (mounted) setState(() {});
   }
 
   Future<void> _markPrayer(int index) async {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
+    if (selectedIndices.contains(index)) {
+      AppLog.i('Tracker', '${prayers[index]['name']} already marked as prayed');
+    }
     if (!selectedIndices.contains(index)) {
+      AppLog.i('Tracker', 'Marked ${prayers[index]['name']} as prayed');
       setState(() {
         selectedIndices.add(index);
       });

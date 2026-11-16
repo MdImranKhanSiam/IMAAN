@@ -1,0 +1,36 @@
+{
+  // Terminal > Run Task... > pick one of these. Logs appear in the TERMINAL tab.
+  // Android's own Verbose/Debug spam (e.g. "D/DisplayEventDispatcher ... Vsync")
+  // is filtered out so the app's [IMAAN] lines, warnings and errors stay readable.
+  // While "run on phone" is running you can still press r (hot reload),
+  // R (hot restart) and q (quit) in that terminal.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "IMAAN: run on phone (logs in terminal)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "flutter run 2>&1 | ForEach-Object { $l = \"$_\"; if ($l -notmatch '^\\s*[VD]/') { $l } }"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "IMAAN: only app logs ([IMAAN] lines) of app already running",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "flutter logs 2>&1 | ForEach-Object { $l = \"$_\"; if ($l -match 'IMAAN|Exception|Error') { $l } }"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    }
+  ]
+}
